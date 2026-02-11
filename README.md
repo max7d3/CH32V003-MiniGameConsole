@@ -101,7 +101,7 @@ I made four example games listed below:
 #### Dino Run ("No Internet" Chrome game)
 ![](Images/img005.jpg)
 
-For gamplay watch the video (1:12): https://youtu.be/mhWHda4XlT0?si=jpvWHffCmz2jvb9t&t=72
+For gameplay watch the video (1:12): https://youtu.be/mhWHda4XlT0?si=jpvWHffCmz2jvb9t&t=72
 
 ### Game Over Screen
 ![](Images/img006.jpg)
@@ -109,7 +109,7 @@ To save memory, the game over screen is also a 'game' that gets turn on when the
 
 ### High Scores System
 ![](Images/img007.jpg)
-The console has a presistant memory to save high scores in games. It utalizes last page of CH32V003 flash. The pages of memory are 64 bytes in size, so we don't have to sacrafice lot of internal storage for that functionality.
+The console has a persistent​ memory to save high scores in games. It utilizes last page of CH32V003 flash. The pages of memory are 64 bytes in size, so we don't have to sacrifice lot of internal storage for that functionality.
 
 The memory can be wiped by user. The scores are obviously saved only if current score is higher than previous one in memory.
 
@@ -121,7 +121,7 @@ Sound is generated using PWM and buzzer. Game can either play single tone for sp
 Buttons are debounced and reading of their state is based on pooling. Games can also read raw state of the GPIO inputs and don't wait for debaunced input.
 
 #### Battery Level Reading
-Battery level is measured using PVD periphearl, not ADC. So, console can only tell if voltage is low or not.
+Battery level is measured using PVD peripheral, not ADC. So, console can only tell if voltage is low or not.
 
 ### Hardware
 > [!CAUTION]
