@@ -1,0 +1,6 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "st7735")(type "KiCad")(uri "${KIPRJMOD}/st7735.pretty")(options "")(descr ""))
+  (lib (name "buzzer")(type "KiCad")(uri "${KIPRJMOD}/buzzer.pretty")(options "")(descr ""))
+  (lib (name "footprints")(type "KiCad")(uri "${KIPRJMOD}/footprints")(options "")(descr ""))
+)

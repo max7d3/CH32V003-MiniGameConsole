@@ -1,0 +1,7 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "st7735")(type "KiCad")(uri "${KIPRJMOD}/st7735.kicad_sym")(options "")(descr ""))
+  (lib (name "SLW-66527511-SMT-TR")(type "KiCad")(uri "${KIPRJMOD}/SLW-66527511-SMT-TR.kicad_sym")(options "")(descr ""))
+  (lib (name "LD2980CM33TR")(type "KiCad")(uri "${KIPRJMOD}/LD2980CM33TR.kicad_sym")(options "")(descr ""))
+  (lib (name "TL3305AF160QG")(type "KiCad")(uri "${KIPRJMOD}/TL3305AF160QG.kicad_sym")(options "")(descr ""))
+)
