@@ -130,5 +130,5 @@ Battery level is measured using PVD periphearl, not ADC. So, console can only te
 > There is a minor symmetry issue in the design: the power switch is centered relative to the LCD's active area, not the PCB itself
 
 ### Code Compilation
-> [!INFO]
+> [!TIP]
 > To build the MounRiver Studio project with the lto (Link Time Optmalization) enabled, you must use GCC 12. The GCC 8 selected by default is bugged (at least from my experience): it cuts out all interrupt functions and volatile variables. 
