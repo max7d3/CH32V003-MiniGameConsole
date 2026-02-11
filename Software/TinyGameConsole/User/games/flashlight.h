@@ -1,0 +1,7 @@
+#ifndef USER_GAMES_FLASHLIGHT_H_
+#define USER_GAMES_FLASHLIGHT_H_
+
+void FLASHLIGHT_Init(void);
+void FLASHLIGHT_Main(void);
+
+#endif /* USER_GAMES_FLASHLIGHT_H_ */

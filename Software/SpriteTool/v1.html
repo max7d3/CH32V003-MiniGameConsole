@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Drawing App</title>
+</head>
+<body>
+    <h1>Drawing App</h1>
+    <label for="gridWidth">Width:</label>
+    <input type="number" id="gridWidth" name="gridWidth" min="1" max="100" value="10">
+    <label for="gridHeight">Height:</label>
+    <input type="number" id="gridHeight" name="gridHeight" min="1" max="100" value="10">
+    <br><br>
+    <label for="selectedColor">Selected color:</label>
+    <select id="selectedColor">
+        <option value="0">Color 1</option>
+        <option value="1">Color 2</option>
+        <option value="2">Color 3</option>
+        <option value="3">Color 4</option>
+    </select>
+    <br><br>
+    <label for="color1">Color 1:</label>
+    <input type="color" id="color1" name="color1" value="#ff0000">
+    <label for="color2">Color 2:</label>
+    <input type="color" id="color2" name="color2" value="#00ff00">
+    <label for="color3">Color 3:</label>
+    <input type="color" id="Color" name="color3" value="#0000ff">
+    <label for="color4">Color 4:</label>
+    <input type="color" id="color4" name="color4" value="#ffff00">
+    <br><br>
+    <canvas id="drawingCanvas"></canvas>
+    <br><br>
+    <button id="exportButton">Export</button>
+    <pre id="exportOutput"></pre>
+
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridWidthInput = document.getElementById('gridWidth');
+        const gridHeightInput = document.getElementById('gridHeight');
+        const selectedColorInput = document.getElementById('selectedColor');
+        const colorInputs = [
+            document.getElementById('color1'),
+            document.getElementById('color2'),
+            document.getElementById('color3'),
+            document.getElementById('color4')
+        ];
+        const exportButton = document.getElementById('exportButton');
+        const exportOutput = document.getElementById('exportOutput');
+
+        let gridWidth = parseInt(gridWidthInput.value);
+        let gridHeight = parseInt(gridHeightInput.value);
+        let cellSize = 20;
+        let grid = [];
+        let isDrawing = false;
+
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x++) {
+                    ctx.fillStyle = colorInputs[grid[y][x]].value;
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+            }
+
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i <= gridWidth; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, gridHeight * cellSize);
+                ctx.stroke();
+            }
+
+            for (let i = 0; i <= gridHeight; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(gridWidth * cellSize, i * cellSize);
+                ctx.stroke();
+            }
+        }
+
+        function initGrid() {
+            grid = [];
+
+            for (let y = 0; y < gridHeight; y++) {
+                let row = [];
+
+                for (let x = 0; x < gridWidth; x++) {
+                    row.push(0);
+                }
+
+                grid.push(row);
+            }
+        }
+
+        function updateCanvasSize() {
+            canvas.width = gridWidth * cellSize;
+            canvas.height = gridHeight * cellSize;
+        }
+
+        function onGridSizeChange() {
+            gridWidth = parseInt(gridWidthInput.value);
+            gridHeight = parseInt(gridHeightInput.value);
+            initGrid();
+            updateCanvasSize();
+            drawGrid();
+        }
+
+        function onCanvasMouseDown(event) {
+            isDrawing = true;
+            onCanvasMouseMove(event);
+        }
+
+        function onCanvasMouseUp(event) {
+            isDrawing = false;
+        }
+
+        function onCanvasMouseMove(event) {
+            if (!isDrawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const gridX = Math.floor(x / cellSize);
+            const gridY = Math.floor(y / cellSize);
+
+            grid[gridY][gridX] = parseInt(selectedColorInput.value);
+
+            drawGrid();
+        }
+
+        function onExportButtonClick() {
+            let output = '';
+
+            for (let y = 0; y < gridHeight; y++) {
+                for (let x = 0; x < gridWidth; x += 4) {
+                    const pixel1 = grid[y][x];
+                    const pixel2 = grid[y][x + 1];
+                    const pixel3 = grid[y][x + 2];
+                    const pixel4 = grid[y][x + 3];
+                    const byte = (pixel1 << 6) | (pixel2 << 4) | (pixel3 << 2) | pixel4;
+                    output += '0b' + byte.toString(2).padStart(8, '0') + ', ';
+                }
+
+                output += '\n';
+            }
+
+            exportOutput.textContent = output;
+        }
+
+        gridWidthInput.addEventListener('change', onGridSizeChange);
+        gridHeightInput.addEventListener('change', onGridSizeChange);
+        canvas.addEventListener('mousedown', onCanvasMouseDown);
+        canvas.addEventListener('mouseup', onCanvasMouseUp);
+        canvas.addEventListener('mousemove', onCanvasMouseMove);
+        exportButton.addEventListener('click', onExportButtonClick);
+
+        initGrid();
+        updateCanvasSize();
+        drawGrid();
+    </script>
+</body>
+</html>

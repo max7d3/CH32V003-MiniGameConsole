@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCU Sprite Editor</title>
+    <style>
+        /* === CSS Variables for Theming === */
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            
+            /* Light theme defaults */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e5e5e5;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --border: #e0e0e0;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --canvas-bg: #fafafa;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3d3d3d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --border: #404040;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --canvas-bg: #121212;
+        }
+
+        /* === Base Styles === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* === Layout === */
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            width: 200px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--canvas-bg);
+            overflow: hidden;
+        }
+
+        .canvas-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .properties {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .export-panel {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 16px 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .export-panel.visible {
+            display: block;
+        }
+
+        /* === Components === */
+        .section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            background: var(--bg-primary);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .btn.primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn.success {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .btn.danger {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+
+        .btn.small {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .btn.icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            font-size: 18px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tool-button {
+            width: 100%;
+            justify-content: flex-start;
+            margin-bottom: 4px;
+        }
+
+        .tool-button.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .input {
+            width: 100%;
+            padding: 8px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-row .input-group {
+            flex: 1;
+        }
+
+        /* === Canvas === */
+        #drawingCanvas {
+            border: 2px solid var(--border);
+            cursor: crosshair;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        /* === Color Palette === */
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .color-swatch {
+            aspect-ratio: 1;
+            border: 3px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.05);
+        }
+
+        .color-swatch.active {
+            border-color: var(--primary);
+            border-width: 4px;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .color-swatch-inner {
+            width: 100%;
+            height: 100%;
+            border: none;
+            cursor: pointer;
+        }
+
+        .color-index {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            pointer-events: none;
+        }
+
+        /* === Export Output === */
+        .export-output {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            white-space: pre;
+            overflow-x: auto;
+            margin-top: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .export-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* === Zoom Controls === */
+        .zoom-info {
+            padding: 4px 12px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* === Status Bar === */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 4px 20px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* === Responsive === */
+        @media (max-width: 1024px) {
+            .toolbar {
+                width: 180px;
+            }
+            .properties {
+                width: 220px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workspace {
+                flex-direction: column;
+            }
+            .toolbar, .properties {
+                width: 100%;
+                border: none;
+                border-bottom: 1px solid var(--border);
+            }
+            .canvas-area {
+                min-height: 400px;
+            }
+        }
+
+        /* === Misc === */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <span>🎨</span>
+                <span>MCU Sprite Editor</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn icon" id="themeToggle" title="Toggle Theme (Ctrl+Shift+T)">🌙</button>
+                <button class="btn small" id="helpBtn" title="Keyboard Shortcuts">Help</button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            <!-- Left Toolbar -->
+            <aside class="toolbar">
+                <div class="section">
+                    <div class="section-title">Tools</div>
+                    <button class="btn tool-button active" data-tool="pencil" title="Pencil (P)">
+                        ✏️ Pencil
+                    </button>
+                    <button class="btn tool-button" data-tool="fill" title="Fill Bucket (F)">
+                        🪣 Fill
+                    </button>
+                    <button class="btn tool-button" data-tool="eraser" title="Eraser (E)">
+                        🧹 Eraser
+                    </button>
+                    <button class="btn tool-button" data-tool="eyedropper" title="Eyedropper (I)">
+                        💧 Pick Color
+                    </button>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section">
+                    <div class="section-title">Canvas</div>
+                    <button class="btn" id="clearBtn" title="Clear Canvas">🗑️ Clear</button>
+                    <button class="btn" id="undoBtn" title="Undo (Ctrl+Z)" disabled>↶ Undo</button>
+                    <button class="btn" id="redoBtn" title="Redo (Ctrl+Y)" disabled>↷ Redo</button>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section">
+                    <div class="section-title">File</div>
+                    <button class="btn" id="newBtn" title="New Sprite (Ctrl+N)">📄 New</button>
+                    <button class="btn" id="saveBtn" title="Save Sprite">💾 Save</button>
+                    <button class="btn" id="loadBtn" title="Load Sprite">📂 Load</button>
+                    <input type="file" id="loadInput" accept=".json" class="hidden">
+                </div>
+            </aside>
+
+            <!-- Center Canvas Area -->
+            <section class="canvas-area">
+                <div class="canvas-controls">
+                    <button class="btn icon" id="zoomOutBtn" title="Zoom Out (-)">−</button>
+                    <div class="zoom-info" id="zoomLevel">100%</div>
+                    <button class="btn icon" id="zoomInBtn" title="Zoom In (+)">+</button>
+                    <button class="btn small" id="zoomFitBtn" title="Fit to View (0)">Fit</button>
+                </div>
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <canvas id="drawingCanvas"></canvas>
+                </div>
+            </section>
+
+            <!-- Right Properties Panel -->
+            <aside class="properties">
+                <div class="section">
+                    <div class="section-title">Grid Size</div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label class="input-label">Width</label>
+                            <input type="number" class="input" id="gridWidth" min="1" max="256" value="16">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Height</label>
+                            <input type="number" class="input" id="gridHeight" min="1" max="256" value="16">
+                        </div>
+                    </div>
+                    <button class="btn primary" id="applyGridBtn" style="width: 100%;">Apply Size</button>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section">
+                    <div class="section-title">Color Palette</div>
+                    <div class="color-palette">
+                        <div class="color-swatch active" data-color="0">
+                            <input type="color" class="color-swatch-inner" id="color0" value="#ff0000">
+                            <div class="color-index">1</div>
+                        </div>
+                        <div class="color-swatch" data-color="1">
+                            <input type="color" class="color-swatch-inner" id="color1" value="#00ff00">
+                            <div class="color-index">2</div>
+                        </div>
+                        <div class="color-swatch" data-color="2">
+                            <input type="color" class="color-swatch-inner" id="color2" value="#0000ff">
+                            <div class="color-index">3</div>
+                        </div>
+                        <div class="color-swatch" data-color="3">
+                            <input type="color" class="color-swatch-inner" id="color3" value="#ffff00">
+                            <div class="color-index">4</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section">
+                    <div class="section-title">Export</div>
+                    <button class="btn success" id="exportCBtn" style="width: 100%; margin-bottom: 8px;">📋 Export C Code</button>
+                    <button class="btn" id="exportPngBtn" style="width: 100%;">🖼️ Export PNG</button>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Export Panel (Collapsible) -->
+        <footer class="export-panel" id="exportPanel">
+            <div class="export-header">
+                <strong>Exported C Code</strong>
+                <div class="btn-group">
+                    <button class="btn small" id="copyBtn">📋 Copy</button>
+                    <button class="btn small" id="closeExportBtn">✕ Close</button>
+                </div>
+            </div>
+            <div class="export-output" id="exportOutput"></div>
+        </footer>
+    </div>
+
+    <script>
+        // ===== STATE MANAGEMENT =====
+        const state = {
+            grid: [],
+            gridWidth: 16,
+            gridHeight: 16,
+            cellSize: 20,
+            selectedColor: 0,
+            currentTool: 'pencil',
+            isDrawing: false,
+            zoomLevel: 1,
+            history: [],
+            historyIndex: -1,
+            maxHistory: 50,
+            colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00']
+        };
+
+        // ===== DOM ELEMENTS =====
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridWidthInput = document.getElementById('gridWidth');
+        const gridHeightInput = document.getElementById('gridHeight');
+        const themeToggle = document.getElementById('themeToggle');
+        const exportPanel = document.getElementById('exportPanel');
+        const exportOutput = document.getElementById('exportOutput');
+        const zoomLevel = document.getElementById('zoomLevel');
+
+        // ===== INITIALIZATION =====
+        function init() {
+            loadTheme();
+            initGrid();
+            updateCanvasSize();
+            drawGrid();
+            setupEventListeners();
+            pushHistory();
+        }
+
+        function initGrid() {
+            state.grid = [];
+            for (let y = 0; y < state.gridHeight; y++) {
+                const row = [];
+                for (let x = 0; x < state.gridWidth; x++) {
+                    row.push(0);
+                }
+                state.grid.push(row);
+            }
+        }
+
+        function updateCanvasSize() {
+            canvas.width = state.gridWidth * state.cellSize;
+            canvas.height = state.gridHeight * state.cellSize;
+            applyZoom();
+        }
+
+        // ===== RENDERING =====
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw pixels
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    ctx.fillStyle = state.colors[state.grid[y][x]];
+                    ctx.fillRect(x * state.cellSize, y * state.cellSize, state.cellSize, state.cellSize);
+                }
+            }
+
+            // Draw grid lines
+            ctx.strokeStyle = getComputedStyle(document.documentElement)
+                .getPropertyValue('--border');
+            ctx.lineWidth = 1;
+
+            // Vertical lines
+            for (let i = 0; i <= state.gridWidth; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * state.cellSize, 0);
+                ctx.lineTo(i * state.cellSize, state.gridHeight * state.cellSize);
+                ctx.stroke();
+            }
+
+            // Horizontal lines
+            for (let i = 0; i <= state.gridHeight; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * state.cellSize);
+                ctx.lineTo(state.gridWidth * state.cellSize, i * state.cellSize);
+                ctx.stroke();
+            }
+        }
+
+        // ===== DRAWING TOOLS =====
+        function handleCanvasClick(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((event.clientX - rect.left) / (state.cellSize * state.zoomLevel));
+            const y = Math.floor((event.clientY - rect.top) / (state.cellSize * state.zoomLevel));
+
+            if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) return;
+
+            if (state.currentTool === 'pencil') {
+                drawPixel(x, y);
+            } else if (state.currentTool === 'eraser') {
+                erasePixel(x, y);
+            } else if (state.currentTool === 'fill') {
+                floodFill(x, y);
+            } else if (state.currentTool === 'eyedropper') {
+                pickColor(x, y);
+            }
+        }
+
+        function drawPixel(x, y) {
+            if (state.grid[y][x] !== state.selectedColor) {
+                state.grid[y][x] = state.selectedColor;
+                drawGrid();
+            }
+        }
+
+        function erasePixel(x, y) {
+            if (state.grid[y][x] !== 0) {
+                state.grid[y][x] = 0;
+                drawGrid();
+            }
+        }
+
+        function pickColor(x, y) {
+            state.selectedColor = state.grid[y][x];
+            updateColorSelection();
+        }
+
+        function floodFill(x, y) {
+            const targetColor = state.grid[y][x];
+            if (targetColor === state.selectedColor) return;
+
+            const stack = [[x, y]];
+            const visited = new Set();
+
+            while (stack.length > 0) {
+                const [cx, cy] = stack.pop();
+                const key = `${cx},${cy}`;
+
+                if (visited.has(key)) continue;
+                if (cx < 0 || cx >= state.gridWidth || cy < 0 || cy >= state.gridHeight) continue;
+                if (state.grid[cy][cx] !== targetColor) continue;
+
+                visited.add(key);
+                state.grid[cy][cx] = state.selectedColor;
+
+                stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+            }
+
+            drawGrid();
+        }
+
+        // ===== HISTORY MANAGEMENT =====
+        function pushHistory() {
+            // Remove any future history if we're not at the end
+            state.history = state.history.slice(0, state.historyIndex + 1);
+
+            // Add current state
+            state.history.push(JSON.parse(JSON.stringify(state.grid)));
+
+            // Limit history size
+            if (state.history.length > state.maxHistory) {
+                state.history.shift();
+            } else {
+                state.historyIndex++;
+            }
+
+            updateHistoryButtons();
+        }
+
+        function undo() {
+            if (state.historyIndex > 0) {
+                state.historyIndex--;
+                state.grid = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
+                drawGrid();
+                updateHistoryButtons();
+            }
+        }
+
+        function redo() {
+            if (state.historyIndex < state.history.length - 1) {
+                state.historyIndex++;
+                state.grid = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
+                drawGrid();
+                updateHistoryButtons();
+            }
+        }
+
+        function updateHistoryButtons() {
+            document.getElementById('undoBtn').disabled = state.historyIndex <= 0;
+            document.getElementById('redoBtn').disabled = state.historyIndex >= state.history.length - 1;
+        }
+
+        // ===== ZOOM CONTROLS =====
+        function applyZoom() {
+            canvas.style.transform = `scale(${state.zoomLevel})`;
+            canvas.style.transformOrigin = 'center';
+            zoomLevel.textContent = `${Math.round(state.zoomLevel * 100)}%`;
+        }
+
+        function zoomIn() {
+            const levels = [0.25, 0.5, 1, 2, 4, 8, 16];
+            const currentIndex = levels.findIndex(l => l >= state.zoomLevel);
+            if (currentIndex < levels.length - 1) {
+                state.zoomLevel = levels[currentIndex + 1];
+                applyZoom();
+            }
+        }
+
+        function zoomOut() {
+            const levels = [0.25, 0.5, 1, 2, 4, 8, 16];
+            const currentIndex = levels.findIndex(l => l >= state.zoomLevel);
+            if (currentIndex > 0) {
+                state.zoomLevel = levels[currentIndex - 1];
+                applyZoom();
+            }
+        }
+
+        function zoomFit() {
+            const wrapper = document.getElementById('canvasWrapper');
+            const wrapperWidth = wrapper.clientWidth - 40;
+            const wrapperHeight = wrapper.clientHeight - 40;
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+
+            const scaleX = wrapperWidth / canvasWidth;
+            const scaleY = wrapperHeight / canvasHeight;
+            state.zoomLevel = Math.min(scaleX, scaleY, 16);
+            applyZoom();
+        }
+
+        // ===== COLOR MANAGEMENT =====
+        function updateColorSelection() {
+            document.querySelectorAll('.color-swatch').forEach((swatch, index) => {
+                swatch.classList.toggle('active', index === state.selectedColor);
+            });
+        }
+
+        function updateColors() {
+            for (let i = 0; i < 4; i++) {
+                state.colors[i] = document.getElementById(`color${i}`).value;
+            }
+            drawGrid();
+        }
+
+        // ===== GRID SIZE =====
+        function applyGridSize() {
+            const newWidth = parseInt(gridWidthInput.value);
+            const newHeight = parseInt(gridHeightInput.value);
+
+            if (newWidth < 1 || newWidth > 256 || newHeight < 1 || newHeight > 256) {
+                alert('Grid size must be between 1 and 256 for both dimensions.');
+                return;
+            }
+
+            // Check if canvas has content
+            const hasContent = state.grid.some(row => row.some(cell => cell !== 0));
+
+            if (hasContent) {
+                if (!confirm('Changing grid size will clear the canvas. Continue?')) {
+                    gridWidthInput.value = state.gridWidth;
+                    gridHeightInput.value = state.gridHeight;
+                    return;
+                }
+            }
+
+            state.gridWidth = newWidth;
+            state.gridHeight = newHeight;
+            state.history = [];
+            state.historyIndex = -1;
+            initGrid();
+            updateCanvasSize();
+            drawGrid();
+            pushHistory();
+        }
+
+        // ===== FILE OPERATIONS =====
+        function newSprite() {
+            const hasContent = state.grid.some(row => row.some(cell => cell !== 0));
+            if (hasContent && !confirm('Create new sprite? Current work will be lost.')) {
+                return;
+            }
+
+            state.gridWidth = 16;
+            state.gridHeight = 16;
+            gridWidthInput.value = 16;
+            gridHeightInput.value = 16;
+            state.history = [];
+            state.historyIndex = -1;
+            initGrid();
+            updateCanvasSize();
+            drawGrid();
+            pushHistory();
+        }
+
+        function saveSprite() {
+            const data = {
+                width: state.gridWidth,
+                height: state.gridHeight,
+                palette: state.colors,
+                data: state.grid
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sprite-${state.gridWidth}x${state.gridHeight}-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function loadSprite(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (!data.width || !data.height || !data.palette || !data.data) {
+                        throw new Error('Invalid sprite file format');
+                    }
+
+                    state.gridWidth = data.width;
+                    state.gridHeight = data.height;
+                    state.colors = data.palette;
+                    state.grid = data.data;
+
+                    gridWidthInput.value = state.gridWidth;
+                    gridHeightInput.value = state.gridHeight;
+
+                    for (let i = 0; i < 4; i++) {
+                        document.getElementById(`color${i}`).value = state.colors[i];
+                    }
+
+                    state.history = [];
+                    state.historyIndex = -1;
+                    updateCanvasSize();
+                    drawGrid();
+                    pushHistory();
+                } catch (error) {
+                    alert('Error loading sprite file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ===== EXPORT FUNCTIONS =====
+        function exportCCode() {
+            let output = `// Sprite: ${state.gridWidth}x${state.gridHeight}, 4 colors, 2 bits per pixel\n`;
+            output += `const uint8_t sprite[] = {\n    `;
+
+            let byteCount = 0;
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x += 4) {
+                    const pixel1 = state.grid[y][x] || 0;
+                    const pixel2 = state.grid[y][x + 1] || 0;
+                    const pixel3 = state.grid[y][x + 2] || 0;
+                    const pixel4 = state.grid[y][x + 3] || 0;
+                    const byte = (pixel1 << 6) | (pixel2 << 4) | (pixel3 << 2) | pixel4;
+                    output += '0b' + byte.toString(2).padStart(8, '0') + ', ';
+                    byteCount++;
+
+                    if (byteCount % 8 === 0 && !(y === state.gridHeight - 1 && x >= state.gridWidth - 4)) {
+                        output += '\n    ';
+                    }
+                }
+            }
+
+            output = output.trimEnd().slice(0, -1); // Remove trailing comma
+            output += '\n};';
+
+            exportOutput.textContent = output;
+            exportPanel.classList.add('visible');
+        }
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(exportOutput.textContent).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            });
+        }
+
+        function exportPNG() {
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = state.gridWidth;
+            exportCanvas.height = state.gridHeight;
+            const exportCtx = exportCanvas.getContext('2d');
+
+            // Draw without grid lines
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    exportCtx.fillStyle = state.colors[state.grid[y][x]];
+                    exportCtx.fillRect(x, y, 1, 1);
+                }
+            }
+
+            exportCanvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sprite-${state.gridWidth}x${state.gridHeight}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        // ===== THEME =====
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+            localStorage.setItem('theme', newTheme);
+            drawGrid(); // Redraw to update grid line colors
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+        }
+
+        // ===== CLEAR CANVAS =====
+        function clearCanvas() {
+            if (!confirm('Clear the entire canvas?')) return;
+            initGrid();
+            drawGrid();
+            pushHistory();
+        }
+
+        // ===== EVENT LISTENERS =====
+        function setupEventListeners() {
+            // Canvas drawing
+            canvas.addEventListener('mousedown', (e) => {
+                state.isDrawing = true;
+                handleCanvasClick(e);
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (state.isDrawing && (state.currentTool === 'pencil' || state.currentTool === 'eraser')) {
+                    handleCanvasClick(e);
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                if (state.isDrawing) {
+                    state.isDrawing = false;
+                    pushHistory();
+                }
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                if (state.isDrawing) {
+                    state.isDrawing = false;
+                    pushHistory();
+                }
+            });
+
+            // Tools
+            document.querySelectorAll('.tool-button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.currentTool = btn.dataset.tool;
+                    document.querySelectorAll('.tool-button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+
+            // Canvas controls
+            document.getElementById('clearBtn').addEventListener('click', clearCanvas);
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('redoBtn').addEventListener('click', redo);
+
+            // File operations
+            document.getElementById('newBtn').addEventListener('click', newSprite);
+            document.getElementById('saveBtn').addEventListener('click', saveSprite);
+            document.getElementById('loadBtn').addEventListener('click', () => {
+                document.getElementById('loadInput').click();
+            });
+            document.getElementById('loadInput').addEventListener('change', (e) => {
+                if (e.target.files[0]) loadSprite(e.target.files[0]);
+            });
+
+            // Zoom
+            document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
+            document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
+            document.getElementById('zoomFitBtn').addEventListener('click', zoomFit);
+
+            // Grid size
+            document.getElementById('applyGridBtn').addEventListener('click', applyGridSize);
+
+            // Colors
+            document.querySelectorAll('.color-swatch').forEach((swatch, index) => {
+                swatch.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'INPUT') {
+                        state.selectedColor = index;
+                        updateColorSelection();
+                    }
+                });
+            });
+
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`color${i}`).addEventListener('change', updateColors);
+            }
+
+            // Export
+            document.getElementById('exportCBtn').addEventListener('click', exportCCode);
+            document.getElementById('exportPngBtn').addEventListener('click', exportPNG);
+            document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
+            document.getElementById('closeExportBtn').addEventListener('click', () => {
+                exportPanel.classList.remove('visible');
+            });
+
+            // Theme
+            themeToggle.addEventListener('click', toggleTheme);
+
+            // Help
+            document.getElementById('helpBtn').addEventListener('click', showHelp);
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Tool selection
+                if (e.key === 'p' || e.key === 'b') {
+                    document.querySelector('[data-tool="pencil"]').click();
+                } else if (e.key === 'f' || e.key === 'g') {
+                    document.querySelector('[data-tool="fill"]').click();
+                } else if (e.key === 'e') {
+                    document.querySelector('[data-tool="eraser"]').click();
+                } else if (e.key === 'i') {
+                    document.querySelector('[data-tool="eyedropper"]').click();
+                }
+
+                // Color selection
+                if (e.key >= '1' && e.key <= '4') {
+                    state.selectedColor = parseInt(e.key) - 1;
+                    updateColorSelection();
+                }
+
+                // History
+                if (e.ctrlKey && e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                } else if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+                    e.preventDefault();
+                    redo();
+                }
+
+                // File operations
+                if (e.ctrlKey && e.key === 'n') {
+                    e.preventDefault();
+                    newSprite();
+                } else if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveSprite();
+                }
+
+                // Zoom
+                if (e.key === '+' || e.key === '=') {
+                    e.preventDefault();
+                    zoomIn();
+                } else if (e.key === '-') {
+                    e.preventDefault();
+                    zoomOut();
+                } else if (e.key === '0') {
+                    e.preventDefault();
+                    zoomFit();
+                }
+
+                // Theme
+                if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                    e.preventDefault();
+                    toggleTheme();
+                }
+            });
+        }
+
+        function showHelp() {
+            const helpText = `
+MCU Sprite Editor - Keyboard Shortcuts
+
+TOOLS:
+P/B - Pencil tool
+F/G - Fill bucket
+E - Eraser
+I - Eyedropper
+
+COLORS:
+1-4 - Select color 1-4
+
+CANVAS:
+Ctrl+Z - Undo
+Ctrl+Y - Redo
+
+FILE:
+Ctrl+N - New sprite
+Ctrl+S - Save sprite
+
+ZOOM:
++/- - Zoom in/out
+0 - Fit to view
+
+OTHER:
+Ctrl+Shift+T - Toggle theme
+            `;
+            alert(helpText.trim());
+        }
+
+        // ===== START APPLICATION =====
+        init();
+    </script>
+</body>
+</html>
